@@ -1,0 +1,9 @@
+node_modules/
+.venv/
+# Generated media stays local; scripts in courses/*/episodes/ are versioned.
+courses/*/audio/
+courses/*/out/
+*.mp4
+*.mp3
+*.wav
+.DS_Store
