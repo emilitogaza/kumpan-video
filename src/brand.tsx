@@ -71,6 +71,10 @@ export const rise = (t: number, start: number, dist = 48, damping = 18): React.C
   };
 };
 
+// The empty frame of piece k (a card, a tile, a bullet's pill). Every frame comes in as the slide opens, so
+// the layout is whole from the start, and the content rises into it at its own reveal.
+export const shell = (t: number, k: number, start: number, dist = 48) => rise(t, Math.min(start, 0.4 + k * 0.08), dist);
+
 // How lit up piece k of n is. It goes to 1 when piece k appears and back to 0 when the next one does,
 // so only the newest piece is purple. The last piece stays lit.
 export const newest = (t: number, at: (k: number) => number, k: number, n: number) =>

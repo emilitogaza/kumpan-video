@@ -12,7 +12,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { a, c, clamp, font, label, Logo, newest, prog, range, rise, Shape, type ShapeName, spr, Title } from "./brand";
+import { a, c, clamp, font, label, Logo, newest, prog, range, rise, Shape, type ShapeName, shell, spr, Title } from "./brand";
 import { Sound } from "./sound";
 import { CodeBlock, type Visual, VisualView } from "./visuals";
 
@@ -316,12 +316,12 @@ const Bullet: React.FC<{ t: number; at: number; k: number; lit: number; small: b
       padding: "18px 32px 18px 18px",
       borderRadius: 32,
       background: c.white,
-      ...rise(t, at),
+      ...shell(t, k, at),
     }}
   >
     <div style={{ position: "absolute", inset: 0, borderRadius: 32, background: a.brand, clipPath: `inset(0 ${(1 - lit) * 100}% 0 0 round 32px)` }} />
     <div style={{ position: "relative", flex: "none", width: 60, height: 60, borderRadius: 30, display: "grid", placeItems: "center", background: a.lilac, ...label, color: a.brand, fontSize: 28 }}>{k + 1}</div>
-    <span style={{ position: "relative", ...label, fontSize: small ? 30 : 34, lineHeight: 1.25, color: interpolateColors(lit, [0, 1], [c.ink, c.white]) }}>{text}</span>
+    <span style={{ position: "relative", ...label, fontSize: small ? 30 : 34, lineHeight: 1.25, color: interpolateColors(lit, [0, 1], [c.ink, c.white]), ...rise(t, at, 16) }}>{text}</span>
   </div>
 );
 

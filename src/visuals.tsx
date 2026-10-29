@@ -1,7 +1,7 @@
 import { icons } from "lucide-react";
 import React from "react";
 import { Easing, Img, interpolate, interpolateColors } from "remotion";
-import { a, c, clamp, IconTile, label, MONO, newest, Pill, prog, range, rise, Ripple, spr, turns } from "./brand";
+import { a, c, clamp, IconTile, label, MONO, newest, Pill, prog, range, rise, Ripple, shell, spr, turns } from "./brand";
 
 // The illustration on the right of a slide. Piece k (an item, a message or a highlight) appears at
 // `at(k)`, together with bullet k. Times are in seconds from when the slide opened. Whatever the hosts
@@ -64,11 +64,13 @@ const Glyph: React.FC<{ name: string; size: number; color: string }> = ({ name, 
 };
 
 // An icon on a tile. As `lit` goes from 0 to 1 the tile turns purple, the icon turns white and the tile
-// gives a small bump on the way.
-const Tile: React.FC<{ icon: string; size: number; bg: string; lit?: number }> = ({ icon, size, bg, lit = 0 }) => (
+// gives a small bump on the way. `on` is the icon's own style, so the tile can sit empty until its reveal.
+const Tile: React.FC<{ icon: string; size: number; bg: string; lit?: number; on?: React.CSSProperties }> = ({ icon, size, bg, lit = 0, on }) => (
   <div style={{ flexShrink: 0, scale: 1 + 0.12 * Math.sin(Math.PI * lit) }}>
     <IconTile size={size} bg={interpolateColors(lit, [0, 1], [bg, a.brand])}>
-      <Glyph name={icon} size={size * 0.5} color={interpolateColors(lit, [0, 1], [a.brand, c.white])} />
+      <div style={{ display: "flex", ...on }}>
+        <Glyph name={icon} size={size * 0.5} color={interpolateColors(lit, [0, 1], [a.brand, c.white])} />
+      </div>
     </IconTile>
   </div>
 );
@@ -105,11 +107,13 @@ const Flow: React.FC<Props> = ({ visual, t, at, width }) => {
         return (
           <React.Fragment key={k}>
             {k > 0 && <Arrow t={t} at={at(k) - 0.25} len={link} across={across} style={across ? { marginTop: tile / 2 - 20 } : { marginLeft: 12 + tile / 2 - 20 }} />}
-            <div style={rise(t, at(k))}>
+            <div style={shell(t, k, at(k))}>
               {across ? (
                 <div style={{ width: 220, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-                  <Tile icon={item.icon} size={tile} bg={c.white} lit={lit} />
-                  <Text size={30}>{item.label}</Text>
+                  <Tile icon={item.icon} size={tile} bg={c.white} lit={lit} on={rise(t, at(k), 16)} />
+                  <Text size={30} style={rise(t, at(k), 16)}>
+                    {item.label}
+                  </Text>
                 </div>
               ) : (
                 <Pill
@@ -117,8 +121,8 @@ const Flow: React.FC<Props> = ({ visual, t, at, width }) => {
                   size={n > 4 ? 28 : 32}
                   style={{ padding: "12px 32px 12px 12px", borderRadius: 28, color: interpolateColors(lit, [0, 1], [c.ink, c.white]) }}
                 >
-                  <Tile icon={item.icon} size={tile} bg={a.lilac} />
-                  {item.label}
+                  <Tile icon={item.icon} size={tile} bg={a.lilac} on={rise(t, at(k), 16)} />
+                  <span style={rise(t, at(k), 16)}>{item.label}</span>
                 </Pill>
               )}
             </div>
@@ -137,9 +141,11 @@ const IconRow: React.FC<Props> = ({ visual, t, at, width }) => {
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "48px 32px", width, justifyItems: "center" }}>
       {visual.items.map((item, k) => (
-        <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, ...rise(t, at(k), 64) }}>
-          <Tile icon={item.icon} size={size} bg={turns[k % 2]} />
-          <Text size={32}>{item.label}</Text>
+        <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, ...shell(t, k, at(k), 64) }}>
+          <Tile icon={item.icon} size={size} bg={turns[k % 2]} on={rise(t, at(k), 16)} />
+          <Text size={32} style={rise(t, at(k), 16)}>
+            {item.label}
+          </Text>
         </div>
       ))}
     </div>
@@ -157,7 +163,9 @@ const Compare: React.FC<Props> = ({ visual, t, at, width }) => {
     <div style={{ display: "flex", flexDirection: rows ? "column" : "row", gap: rows ? 20 : 28, width, alignItems: "stretch" }}>
       {visual.items.map((item, k) => {
         const best = visual.type === "compare" && k === visual.items.length - 1;
-        const bg = best ? a.brand : chips ? turns[k % turns.length] : c.white;
+        // The better option's card waits white like the others and only turns purple when it's revealed.
+        const on = prog(t, at(k), 0.3);
+        const bg = best ? interpolateColors(on, [0, 1], [c.white, a.brand]) : chips ? turns[k % turns.length] : c.white;
         return (
           <div
             key={k}
@@ -171,11 +179,16 @@ const Compare: React.FC<Props> = ({ visual, t, at, width }) => {
               flexDirection: rows ? "row" : "column",
               alignItems: "center",
               gap: rows ? 24 : 20,
-              ...rise(t, at(k), 64),
+              ...shell(t, k, at(k), 64),
             }}
           >
-            <Tile icon={item.icon} size={rows ? 80 : wide ? 128 : chips ? 92 : 104} bg={bg === c.white ? a.lilac : c.white} />
-            <div style={{ display: "flex", flexDirection: "column", alignItems: rows ? "flex-start" : "center", gap: 12, minWidth: 0 }}>
+            <Tile
+              icon={item.icon}
+              size={rows ? 80 : wide ? 128 : chips ? 92 : 104}
+              bg={best ? interpolateColors(on, [0, 1], [a.lilac, c.white]) : bg === c.white ? a.lilac : c.white}
+              on={rise(t, at(k), 16)}
+            />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: rows ? "flex-start" : "center", gap: 12, minWidth: 0, ...rise(t, at(k), 24) }}>
               <Text size={wide ? 40 : 32} style={{ color: best ? c.white : c.ink, ...(rows && { textAlign: "left" }) }}>
                 {item.label}
               </Text>
@@ -239,9 +252,11 @@ const Cycle: React.FC<Of<"cycle">> = ({ visual, t, at, width }) => {
       {visual.items.map((item, k) => {
         const [x, y] = point(angle(k));
         return (
-          <div key={k} style={{ position: "absolute", left: x - 110, top: y - 85, width: 220, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, ...rise(t, at(k)) }}>
-            <Tile icon={item.icon} size={n > 3 ? 96 : 112} bg={turns[k % 2]} lit={newest(t, at, k, n) * (1 - prog(t, closed, 0.4))} />
-            <Text size={28}>{item.label}</Text>
+          <div key={k} style={{ position: "absolute", left: x - 110, top: y - 85, width: 220, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, ...shell(t, k, at(k)) }}>
+            <Tile icon={item.icon} size={n > 3 ? 96 : 112} bg={turns[k % 2]} lit={newest(t, at, k, n) * (1 - prog(t, closed, 0.4))} on={rise(t, at(k), 16)} />
+            <Text size={28} style={rise(t, at(k), 16)}>
+              {item.label}
+            </Text>
           </div>
         );
       })}
@@ -293,15 +308,15 @@ const Stats: React.FC<Of<"stats">> = ({ visual, t, at, width }) => {
               padding: across ? "72px 36px" : "26px 36px",
               borderRadius: 36,
               background: bg,
-              ...rise(t, at(k), 64),
+              ...shell(t, k, at(k), 64),
             }}
           >
             {/* The final value sits here invisibly and keeps the width fixed, so the card doesn't jump as the number grows. */}
-            <div style={{ ...label, display: "grid", flex: "none", fontSize: Math.min(across ? 150 : 96, card / (s.value.length * 0.66)), lineHeight: 1, letterSpacing: "-0.04em", whiteSpace: "nowrap", color }}>
+            <div style={{ ...label, display: "grid", flex: "none", fontSize: Math.min(across ? 150 : 96, card / (s.value.length * 0.66)), lineHeight: 1, letterSpacing: "-0.04em", whiteSpace: "nowrap", color, ...rise(t, at(k), 24) }}>
               <span style={{ gridArea: "1 / 1", visibility: "hidden" }}>{s.value}</span>
               <span style={{ gridArea: "1 / 1", textAlign: across ? "center" : "right" }}>{countUp(s.value, prog(t, at(k) + 0.1, 1.1))}</span>
             </div>
-            <Text size={across ? 34 : 30} style={{ color, textAlign: across ? "center" : "left", lineHeight: 1.25 }}>
+            <Text size={across ? 34 : 30} style={{ color, textAlign: across ? "center" : "left", lineHeight: 1.25, ...rise(t, at(k), 24) }}>
               {s.label}
             </Text>
           </div>

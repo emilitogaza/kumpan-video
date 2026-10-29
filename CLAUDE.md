@@ -113,7 +113,9 @@ fonts, outlines, shadows or wobble.
   when it should differ from the subtitle.
 - **Reveal**: bullet k and visual item k appear together when the k-th line marked
   `"reveal": true` starts. Mark one line per bullet (or per visual item on a slide without
-  bullets), or none to bring everything in as the slide opens.
+  bullets), or none to bring everything in as the slide opens. Bullets and the item-by-item
+  visuals (`flow`, `icons`, `compare`, `piles`, `cycle`, `stats`) show every empty pill, card or
+  tile as the slide opens, and fill each one at its reveal (`shell` in `src/brand.tsx`).
 - **Code highlight**: a slide with `code` can add `"highlight": [[line indexes], …]`. Group k lights
   up at the k-th reveal and the other lines dim, so the hosts can walk through a snippet.
 - **Purple slide**: `"purple": true` gives one slide a solid purple panel and white type. Keep it for
