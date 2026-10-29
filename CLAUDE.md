@@ -6,15 +6,15 @@ Turns material into two-host episodes: an `.mp4` with animated slides and visual
 `.mp3` of the voices alone. `tts.py` voices each line with Kokoro through mlx-audio, trims the silence
 off both ends and saves when each word starts (kinetic slides and subtitles use those times), and calls
 `sounds.py`, which synthesizes the music and sound effects with numpy. The video is a Remotion
-composition in `src/`, `check.mjs` lints scripts. Only code and scripts are versioned;
-generated audio and video stay local (see `.gitignore`).
+composition in `src/`, `check.mjs` lints scripts. Only code is versioned; everything under
+`courses/`, scripts and generated audio and video alike, stays local (see `.gitignore`).
 
 ```
 courses/<course>/
-  course.json              title, hosts + voices                              (versioned)
-  episodes/<episode>.json  the script                                         (versioned)
-  audio/<episode>/         line WAVs, word times, sounds, props.json          (ignored)
-  out/                     <episode>.mp4, .mp3, .srt (and .vertical.mp4)      (ignored)
+  course.json              title, hosts + voices
+  episodes/<episode>.json  the script
+  audio/<episode>/         line WAVs, word times, sounds, props.json
+  out/                     <episode>.mp4, .mp3, .srt (and .vertical.mp4)
 ```
 
 A one-off video is a course with one episode.
@@ -32,7 +32,7 @@ When the user gives you a topic or material (a file, a folder such as another re
 
 `./render-all.sh <course>` builds every episode that has no `.mp4` yet. Extra flags go to `remotion render`: `--concurrency=2` if a render stalls (usually memory), `--scale=1.3333333333333333` for 2560×1440 (all 16 digits, or the height comes out 1439.99…).
 
-Remotion API guidance is in `.claude/skills/remotion-*`. Never commit generated media.
+Remotion API guidance is in `.claude/skills/remotion-*`. Never commit anything under `courses/`.
 
 ## course.json
 
@@ -114,8 +114,8 @@ fonts, outlines, shadows or wobble.
 - **Reveal**: bullet k and visual item k appear together when the k-th line marked
   `"reveal": true` starts. Mark one line per bullet (or per visual item on a slide without
   bullets), or none to bring everything in as the slide opens. Bullets and the item-by-item
-  visuals (`flow`, `icons`, `compare`, `piles`, `cycle`, `stats`) show every empty pill, card or
-  tile as the slide opens, and fill each one at its reveal (`shell` in `src/brand.tsx`).
+  visuals (`flow`, `icons`, `compare`, `piles`, `cycle`, `stats`, `keys`, `layers`) show every
+  empty pill, card or tile as the slide opens, and fill each one at its reveal (`shell` in `src/brand.tsx`).
 - **Code highlight**: a slide with `code` can add `"highlight": [[line indexes], …]`. Group k lights
   up at the k-th reveal and the other lines dim, so the hosts can walk through a snippet.
 - **Purple slide**: `"purple": true` gives one slide a solid purple panel and white type. Keep it for
@@ -152,8 +152,25 @@ mechanism the hosts are describing.
 | `offline` | a Wi-Fi switch that flips off while a task under it keeps going to 100% and gets a check | proof that something runs without a network | `task`; 2 reveals: the switch goes off, then the task finishes two seconds later |
 | `photo` | a photo in a rounded frame that rises in and slowly zooms, with a caption pill that pops in over its corner | people, places, real screenshots | `src` (a file next to `course.json`), `caption?`; reveal 0 brings the photo, reveal 1 the caption. Match a photo's colours to the brand with ImageMagick first if they clash |
 | `erase` | code whose `⟦marked⟧` parts turn red and struck through, then collapse away, and the tab title switches | what a build step removes: TypeScript types, dead code | `code` with `⟦…⟧` marks, `files?: ["greet.ts", "greet.js"]`; 3 reveals: show, mark, erase |
+| `chat` | an assistant's chat window: lilac user bubbles, replies that type in word by word, a status line with a wave through it, tool cards with a filling ring and a rail of steps that tick off on their own (sections pop in as chips under one step) | showing an in-product assistant at work | `items: [{from: "user" \| "bot" \| "status", text, link?}` or `{from: "tool", icon, title, text, steps, sections?, sectionsAt?}]` (≤ 5); one reveal per item |
+| `stream` | text arriving chunk by chunk in a dark window; each regex match lights up once it's complete and a chip pops in under the window for it | streaming responses, parsing as data arrives | `text`, `match` (a regex), `chips?: []` (one per match), `title?`; 1 reveal starts the stream |
+| `diff` | two lists side by side joined by dashed lines; same rows fade, edited and added rows turn purple with a note, removed ones get struck out in red | what changed between two versions of a list | `items: [{label, change?: "edited" \| "added" \| "removed", note?}]` (≤ 6), `titles?`; 3 reveals: before, after, judge |
+| `keys` | big keycaps on a lilac base that press down together | keyboard shortcuts | `items: [{keys: ["⌘", "K"], label?}]` (1–3) |
+| `drag` | a mock screen with a sidebar where a cursor drags a floating window between stops; a stop past 1 pushes it off screen and it springs home | windows, panels, anything moved by hand | `stops: [{x, y, label?}]` (fractions of the free space, 2–4); one reveal per stop, the first opens the window |
+| `layers` | an exploded isometric stack, each layer lifting into place with a label beside it | things built from stacked layers: blur passes, middleware, a network stack | `items: [{label, note?}]` (2–5, bottom first) |
+| `chart` | a line that draws itself over a pale area (or bars that grow), an optional dashed earlier series, and a marked point with a ripple and a note | trends, overshoot, this period against the last | `points: [{label, value}]` (labels may be ""), `kind?: "bars"`, `compare?: []`, `unit?`, `mark?`, `note?`; reveal 0 draws, reveal 1 marks |
+| `breakdown` | a total bar that splits into parts that add up, then one part opening into its own split below | shares and filters that must add up: traffic by source, a budget | `total: {label, value}`, `parts: []`, `by?`, `focus?`, `split?: []`, `splitBy?`; 2 or 3 reveals |
+| `gallery` | a media library of icon tiles with alt text and ids; one gets picked and its id lands in a field, a made-up id gets struck out and drops away | picking assets by description | `items: [{icon, alt, id}]` (4–6), `pick`, `field?`, `reject?`; reveals: show, pick, reject |
+| `slots` | a big counter over a grid of slots that fill to a limit; slots past it come in with red crosses | quotas and hard limits | `max`, `want`, `label`; reveal 0 fills to `max`, reveal 1 shows the overflow |
+| `files` | file cards in bands from top to bottom, joined by arrows that draw in one at a time with a label beside each; the file the newest arrow points at is purple | how files belong together: who imports, calls or sends to whom | `items: [{name, note?, group}]` (≤ 3 per band, ≤ 4 bands, notes ≤ 22 characters), `links: [{from, to, label?}]` (item indexes, between bands), `groups?: []` (band names); one reveal per link |
+| `race` | parallel lanes that fill at their own pace and finish in any order, one can fail red, with a counter and a result pill | parallel jobs: translations, CI, `Promise.all` | `items: [{label, fail?}]` (≤ 6), `counter?` (with `{n}` and `{total}`), `result?`; reveal 0 starts, reveal 1 the result |
+| `url` | an address bar that types a URL, then lights its parts one by one with a label under each; an arrow can drop to a dark bar with the path the server really serves (`*marks*` turn lilac) | taking a URL apart, rewrites and redirects | `url`, `parts: [{text, label}]` (in order, ≤ 4), `to?`, `toLabel?`; one reveal per part, plus one for `to` |
+| `tree` | a page tree; each reveal lights one path from the top down while its URL assembles in a bar below, one segment per page; a path can switch language and every page then shows its slug in it | URLs built from parents, translated slugs, nested navigation | `nodes: [{label, parent?, slugs: []}]` (parents listed first, ≤ 5 leaves, an empty slug adds nothing), `paths: [{node, lang?}]`, `langs?: [{prefix, label}]`; one reveal per path |
+| `lifecycle` | events along a line with a playhead that springs from one to the next; lanes are born at an event and grow behind it, end with a check, or never end and run off the edge | what lives how long: preview deploys and database branches per pull request, sessions, caches | `events: [{label}]` (2–5), `lanes: [{label, from, to?, note?, endIcon?}]` (≤ 4, event indexes); one reveal per event |
+| `sieve` | items in a row fall through gates one by one; the one a gate catches lands on it, turns red and is struck out, the rest reach the end, which lights up | filters and checks in order: spam protection, validation, CI gates | `items: [{label, stop?}]` (≤ 5, `stop` a gate index), `gates: [{icon, label}]` (≤ 4), `end: {icon, label}`; one reveal per gate, plus one for the end |
+| `form` | a form that types its values in, marks wrong fields red, gets fixed and spins while sending, then turns into its confirmation | what a visitor sees when they submit a form | `fields: [{label, value, error?, fixed?}]` (≤ 4), `button`, `sending?`, `done`; reveals: type, errors (if any), send, done |
 
-Beside bullets, code-like visuals (`code`, `terminal`, `browser`, `erase`, `prompt`) get a wider column and the
+Beside bullets, code-like visuals (`code`, `terminal`, `browser`, `erase`, `prompt`, `stream`, `chat`) get a wider column and the
 bullets get slightly smaller text.
 
 When an episode's central idea deserves its own animation, add a new type to `src/visuals.tsx` in

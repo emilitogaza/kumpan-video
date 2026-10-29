@@ -2,7 +2,7 @@ import type React from "react";
 import { Html5Audio, interpolate, random, Sequence, staticFile, useVideoConfig } from "remotion";
 import { clamp } from "./brand";
 import type { Line, Scene } from "./Episode";
-import { promptTiming } from "./visuals";
+import { formTiming, promptTiming, raceTiming, streamTiming, toolTiming } from "./visuals";
 
 // How loud each sound plays. The files all peak at full scale (sounds.py) and Kokoro's voices peak
 // around -8 dB, so these keep every effect well under them: you should feel the sounds more than hear
@@ -40,6 +40,20 @@ const cues = (scenes: Scene[], duration: number): Cue[] => {
       continue;
     }
     if (v?.type === "terminal") keys(start + 0.2, start + 1, v.command.length);
+    if (v?.type === "url") keys(start + 0.3, start + 1.1, v.url.length);
+    if (v?.type === "form") for (const [j, f] of formTiming(v, at).entries()) keys(start + f.from, start + f.to, v.fields[j].value.length);
+    // A soft tick as each tool step or race lane finishes, and a click for each streamed chunk.
+    if (v?.type === "chat")
+      v.items.forEach((item, k) => {
+        if (item.from !== "tool") return;
+        const { starts, done } = toolTiming(item);
+        for (const s of [...starts.slice(1), done]) out.push({ file: "tick", at: start + at(k) + s, volume: LEVEL.tick * 0.6 });
+      });
+    if (v?.type === "race") for (const end of raceTiming(v, at)) out.push({ file: "tick", at: start + end, volume: LEVEL.tick * 0.6 });
+    if (v?.type === "stream") {
+      const s = streamTiming(v, at);
+      s.cuts.forEach((_, j) => out.push({ file: "key", at: start + s.start + j * 0.11, volume: LEVEL.key * (0.4 + 0.6 * random(`chunk${j}`)) }));
+    }
     for (const r of reveals) out.push({ file: "tick", at: start + r });
   }
   return out;

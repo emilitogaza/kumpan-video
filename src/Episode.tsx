@@ -273,7 +273,7 @@ const SlideView: React.FC<{ slide: Slide; seconds: number; lines: Line[] }> = ({
     );
   // Code, terminals, browsers and prompts need more room to stay readable, so next to bullets they get a
   // wider column. A tall video stacks the bullets over the visual instead.
-  const codeLike = !!slide.code || ["terminal", "browser", "erase", "prompt"].includes(slide.visual?.type ?? "");
+  const codeLike = !!slide.code || ["terminal", "browser", "erase", "prompt", "stream", "chat"].includes(slide.visual?.type ?? "");
   const side = tall || !slide.bullets ? inner : codeLike ? 800 : 700;
   return (
     <>
